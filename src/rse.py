@@ -68,7 +68,7 @@ class BenesBlock(nn.Module):
         self.reverse_shuffle = ShuffleLayer(reverse=True)
 
     def forward(self, x):
-        k = x.shape[1].bit_length()
+        k = x.shape[1].bit_length() - 1
         for _ in range(k-1):
             x = self.regular_switch(x)
             x = self.regular_shuffle(x)
