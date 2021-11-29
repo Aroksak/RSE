@@ -19,4 +19,4 @@ This repository contains the unofficial _PyTorch_ implementation of the followin
 Algorithmic benchmarks are close to the paper. Slightly worse, but I didn't implement curriculum learning and didn't spend much time tuning hyper-parameters. Nevertheless,
 generalization to longer sequences can be observed.
 
-MusicNet task is far worse, so far I only managed to achieve ~12% APS.
+Results on MusicNet task are much worse, so far I only managed to achieve ~12% APS.
