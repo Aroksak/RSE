@@ -22,17 +22,13 @@ class SeqModel(nn.Module):
         return x
 
 
-def plot_training_stats(losses, accuracies):
-    fig, ax1 = plt.subplots()
-    fig.set_facecolor("white")
-    ax2 = ax1.twinx()
-    ax1.plot(losses, 'r-')
+def plot_training_stats(ax, losses, accuracies):
+    ax2 = ax.twinx()
+    ax.plot(losses, 'r-')
     ax2.plot(accuracies, 'b-')
-    ax1.set_title("Training stats")
-    ax1.set_xlabel("Step")
-    ax1.set_ylabel("Loss")
+    ax.set_xlabel("Step")
+    ax.set_ylabel("Loss")
     ax2.set_ylabel("Accuracy")
-    plt.show()
 
 
 def training_loop(model, batch_generator, device, **kwargs):
@@ -67,7 +63,7 @@ def training_loop(model, batch_generator, device, **kwargs):
         if np.mean(accuracies[-500:]) > 0.9999:
             break
 
-    plot_training_stats(losses, accuracies)
+    return losses, accuracies
 
 
 def plot_test_errplot(max_out_lengths, accuracy_medians, accuracy_errs):
@@ -110,4 +106,42 @@ def test_lengths(model, batch_generator, device, **kwargs):
         accuracy_errs[0].append(lower_error)
         accuracy_errs[1].append(upper_error)
 
-    plot_test_errplot(max_out_lengths, accuracy_medians, accuracy_errs)
+    return max_out_lengths, accuracy_medians, accuracy_errs
+
+
+class ModelsComparator:
+    def __init__(self):
+        pass
+
+    @staticmethod
+    def plot_train_logs(subfig, train_logs):
+        axs = subfig.subplots(1, len(train_logs))
+        for ax, model_name in zip(axs, train_logs):
+            plot_training_stats(ax, *train_logs[model_name])
+            ax.set_title(f"Training stats ({model_name})")
+
+    @staticmethod
+    def plot_test_errplot(subfig, test_logs):
+        ax = subfig.subplots()
+        ax.set_title("Testing generalization to different seq lenghts")
+        for name, (max_out_lengths, accuracy_medians, accuracy_errs) in test_logs.items():
+            ax.errorbar(np.arange(len(max_out_lengths)), accuracy_medians, yerr=accuracy_errs, fmt='o-', label=name)
+        ax.xaxis.set_ticks(np.arange(len(max_out_lengths)))
+        ax.xaxis.set_ticklabels(max_out_lengths)
+        ax.set_xlabel("Seq length")
+        ax.set_ylabel("Accuracy")
+        ax.legend()
+
+    def compare(self, models_dict, batch_gen, device, **kwargs):
+        train_logs = {}
+        for name, model in models_dict.items():
+            train_logs[name] = training_loop(model, batch_gen, device, **kwargs)
+        fig = plt.figure(constrained_layout=True, figsize=(10, 10))
+        fig.set_facecolor("white")
+        subfigs = fig.subfigures(2, 1)
+        self.plot_train_logs(subfigs[0], train_logs)
+        test_logs = {}
+        for name, model in models_dict.items():
+            test_logs[name] = test_lengths(model, batch_gen, device, **kwargs)
+        self.plot_test_errplot(subfigs[1], test_logs)
+        return fig

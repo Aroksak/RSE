@@ -16,7 +16,12 @@ This repository contains the unofficial _PyTorch_ implementation of the followin
 
 # Current Status
 
-Algorithmic benchmarks are close to the paper. Slightly worse, but I didn't implement curriculum learning and didn't spend much time tuning hyper-parameters. Nevertheless,
-generalization to longer sequences can be observed.
+Algorithmic benchmarks are close to the paper and generalization to longer sequences can be observed.
 
 Results on MusicNet task are much worse, so far I only managed to achieve ~12% APS.
+
+# Heavy weight-sharing
+
+In the paper authors propose separate sets of weights for "forward" and "reversed" switch units.
+I studied a variant with single set of weights used for all instances of switch unit in a single block.
+You can find my results in notebooks/Algorithmic.ipynb. In short: it's probably not worth it.
