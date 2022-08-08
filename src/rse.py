@@ -60,11 +60,11 @@ class ShuffleLayer(nn.Module):
 
 
 class BenesBlock(nn.Module):
-    def __init__(self, m, r=0.9):
+    def __init__(self, m, r=0.9, full_share=False):
         super().__init__()
         self.regular_switch = SwitchLayer(m, r)
         self.regular_shuffle = ShuffleLayer(reverse=False)
-        self.reverse_switch = SwitchLayer(m, r)
+        self.reverse_switch = self.regular_switch if full_share else SwitchLayer(m, r)
         self.reverse_shuffle = ShuffleLayer(reverse=True)
 
     def forward(self, x):
@@ -73,16 +73,16 @@ class BenesBlock(nn.Module):
             x = self.regular_switch(x)
             x = self.regular_shuffle(x)
         for _ in range(k-1):
-            x = self.regular_switch(x)
+            x = self.reverse_switch(x)
             x = self.reverse_shuffle(x)
         return x
 
 
 class ResidualShuffleExchangeNetwork(nn.Module):
-    def __init__(self, m, n_blocks=1, r=0.9):
+    def __init__(self, m, n_blocks=1, r=0.9, full_share=False):
         super().__init__()
         self.blocks = nn.Sequential(
-            OrderedDict({f"benes_block_{i}": BenesBlock(m, r) for i in range(n_blocks)})
+            OrderedDict({f"benes_block_{i}": BenesBlock(m, r, full_share=full_share) for i in range(n_blocks)})
         )
         self.final_switch = SwitchLayer(m, r)
 

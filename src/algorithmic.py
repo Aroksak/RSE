@@ -9,10 +9,10 @@ from rse import ResidualShuffleExchangeNetwork
 
 
 class SeqModel(nn.Module):
-    def __init__(self, m, n_classes, n_blocks=1):
+    def __init__(self, m, n_classes, n_blocks=1, full_share=False):
         super().__init__()
         self.embedding = nn.Embedding(n_classes, m)
-        self.rse = ResidualShuffleExchangeNetwork(m, n_blocks=n_blocks)
+        self.rse = ResidualShuffleExchangeNetwork(m, n_blocks=n_blocks, full_share=full_share)
         self.linear = nn.Linear(m, n_classes)
 
     def forward(self, x):
@@ -35,7 +35,7 @@ def plot_training_stats(losses, accuracies):
     plt.show()
 
 
-def training_loop(model, batch_generator, device):
+def training_loop(model, batch_generator, device, **kwargs):
     model.to(device)
     optimizer = RAdam(model.parameters(), lr=0.000883883)
     loss_fn = torch.nn.CrossEntropyLoss()
@@ -52,7 +52,7 @@ def training_loop(model, batch_generator, device):
         optimizer.zero_grad()
         n = np.random.randint(2, max_n + 1)
         out_length = 1 << n
-        inp, res = batch_generator(out_length, batch_size)
+        inp, res = batch_generator(out_length, batch_size, **kwargs)
         output = model(inp.to(device))
         flat_output = torch.flatten(output, end_dim=1)
         flat_res = torch.flatten(res).to(device)
@@ -82,7 +82,7 @@ def plot_test_errplot(max_out_lengths, accuracy_medians, accuracy_errs):
     plt.show()
 
 
-def test_lengths(model, batch_generator, device):
+def test_lengths(model, batch_generator, device, **kwargs):
     model.to(device)
     model.eval()
     max_out_lengths = [4, 8, 16, 32, 64, 128, 256, 512, 1024, 2048, 4096]
@@ -90,13 +90,13 @@ def test_lengths(model, batch_generator, device):
     examples_per_length = 100
 
     accuracy_medians = []
-    accuracy_errs = [[],[]]
+    accuracy_errs = [[], []]
 
     for length in tqdm(max_out_lengths, desc="Testing."):
         accuracies = []
         for _ in range(examples_per_length):
             with torch.no_grad():
-                inp, res = batch_generator(length, batch_size)
+                inp, res = batch_generator(length, batch_size, **kwargs)
                 output = model(inp.to(device))
                 flat_output = torch.flatten(output, end_dim=1)
                 flat_res = torch.flatten(res).to(device)
